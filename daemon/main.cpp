@@ -32,6 +32,7 @@
 #include "airpods_packets.h"
 #include "logger.h"
 #include "media/mediacontroller.h"
+#include "media/chromemediaconnector.h"
 #include "trayiconmanager.h"
 #include "notifier.hpp"
 #include "enums.h"
@@ -112,6 +113,7 @@ public:
         mediaController->followMediaChanges();
 
         monitor = new BluetoothMonitor(this);
+        m_chromeConnector = new ChromeMediaConnector(m_settings, this);
         connect(monitor, &BluetoothMonitor::deviceConnected, this, &AirPodsTrayApp::bluezDeviceConnected);
         connect(monitor, &BluetoothMonitor::deviceDisconnected, this, &AirPodsTrayApp::bluezDeviceDisconnected);
         connect(monitor, &BluetoothMonitor::deviceConnectionProbeFinished,
@@ -793,6 +795,7 @@ private slots:
 
     void bluezDeviceConnected(const QString &address, const QString &name)
     {
+        m_chromeConnector->deviceConnected(address);
         rememberAirPodsDevice(address, name);
         m_disconnectFinalized = false;
 
@@ -1032,6 +1035,7 @@ private slots:
 
     void bluezDeviceDisconnected(const QString &address, const QString &name)
     {
+        m_chromeConnector->deviceDisconnected(address);
         if (address == m_deviceInfo->bluetoothAddress())
         {
             onDeviceDisconnected(QBluetoothAddress(address));
@@ -1640,6 +1644,7 @@ private:
     // Last answer BlueZ gave about this device, which is what separates a dead link from absent pods.
     bool m_bluezReportedConnected = false;
     QSettings *m_settings;
+    ChromeMediaConnector *m_chromeConnector = nullptr;
     AutoStartManager *m_autoStartManager;
     int m_retryAttempts = 3;
     int m_retryCount = 0;
@@ -1695,6 +1700,12 @@ public:
     int reopenCallsTotal() const { return m_reopenCallsTotal; }
     void incReopenCallsTotal() { ++m_reopenCallsTotal; }
 
+    void setChromeConnectEnabled(bool enabled)
+    {
+        m_chromeConnector->setEnabled(enabled);
+        writeStateFile();
+    }
+
     // The status snapshot, shared by the IPC verb and the state file so the two
     // can never drift.
     QJsonObject statusJson()
@@ -1703,6 +1714,8 @@ public:
         Battery *b = d ? d->getBattery() : nullptr;
         QJsonObject status;
         status.insert("schema_version", 1);
+        status.insert("chrome_connect_enabled", m_chromeConnector->enabled());
+        status.insert("chrome_connect_paused", m_chromeConnector->paused());
         status.insert("connected", areAirpodsConnected());
         status.insert("device_name", d ? d->deviceName() : QString());
         status.insert("noise_mode", d ? d->noiseControlModeInt() : -1);
@@ -2106,6 +2119,10 @@ int main(int argc, char *argv[]) {
                 trayAppPtr->setConversationalAwareness(true);
             } else if (msg == "ca:off") {
                 trayAppPtr->setConversationalAwareness(false);
+            } else if (msg == "chrome-connect:on") {
+                trayAppPtr->setChromeConnectEnabled(true);
+            } else if (msg == "chrome-connect:off") {
+                trayAppPtr->setChromeConnectEnabled(false);
             } else if (msg == "disconnect") {
                 trayAppPtr->disconnectAirPods();
             } else if (msg == "connect") {

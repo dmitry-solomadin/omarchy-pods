@@ -182,6 +182,37 @@ systemctl --user restart librepods.service
 which is where the panel finds `librepods-ctl`. The unit is bound to
 `graphical-session.target`, so the daemon comes back after a reboot.
 
+## Connect when Chrome plays media
+
+The bundled daemon connects the last remembered AirPods when Chrome or Chromium
+reports sustained media playback through MPRIS. This is on by default; connect
+the AirPods manually once with the updated daemon running to establish the target.
+
+Disconnecting from Omarchy's Bluetooth menu pauses the connector until the next
+successful PC connection. The pause survives daemon restarts and stops Chrome
+polling. This uses BlueZ's `Device1.Disconnected` reason: all local-host disconnects
+count, including `bluetoothctl`; remote disconnects, timeouts and suspend do not.
+BlueZ does not identify which application initiated a disconnect or reconnection.
+The LibrePods daemon keeps running to provide battery and controls.
+
+```bash
+librepods-ctl chrome-connect:off  # Disable the feature persistently
+librepods-ctl chrome-connect:on   # Enable it (does not clear a manual-disconnect pause)
+librepods-ctl status              # chrome_connect_enabled and chrome_connect_paused
+```
+
+Playback must stay active for two seconds. There are at most two attempts per
+episode, with 15 seconds after a connection request finishes before retrying.
+Pauses under ten seconds stay in the same episode, and a new episode waits until
+60 seconds after the last attempt. An already-connected device is left alone.
+Switching away during an episode does not trigger another takeover in that episode.
+
+The connector uses the existing service and audio-profile path. Chrome media
+integration must be enabled; muted videos may still report playback. Taking over
+from another device and routing audio depend on the AirPods and desktop audio
+policy. This is a normal Bluetooth connection request, not Apple's switching
+protocol. Manual-disconnect detection requires BlueZ's `Disconnected` signal.
+
 ## Remove
 
 ```bash

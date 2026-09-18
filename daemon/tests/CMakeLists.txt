@@ -19,6 +19,11 @@ endfunction()
 
 # Headers must be listed so AUTOMOC scans Q_OBJECT classes defined in
 # them — header-only QObject subclasses won't link otherwise.
+openpods_add_test(tst_chromeconnectpolicy
+    tst_chromeconnectpolicy.cpp
+    ../media/chromeconnectpolicy.hpp
+)
+
 openpods_add_test(tst_eardetection
     tst_eardetection.cpp
     ../eardetection.hpp
