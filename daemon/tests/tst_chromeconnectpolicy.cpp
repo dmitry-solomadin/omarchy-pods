@@ -5,6 +5,13 @@ class ChromeConnectPolicyTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void firstPlaybackRequestsImmediately()
+    {
+        ChromeConnectPolicy policy;
+        QVERIFY(!policy.observe(0, false, false));
+        QVERIFY(policy.observe(1000, true, false));
+    }
+
     void unknownPlaybackDoesNotRearmEpisode()
     {
         ChromeConnectPolicy policy;
@@ -18,17 +25,15 @@ private slots:
     void unknownPlaybackCancelsPendingLookup()
     {
         ChromeConnectPolicy policy;
-        policy.observe(0, true, false);
-        QVERIFY(policy.observe(2000, true, false));
-        policy.observe(2001, std::nullopt, false);
-        QVERIFY(!policy.connectionStillWanted(2001));
+        QVERIFY(policy.observe(0, true, false));
+        policy.observe(1, std::nullopt, false);
+        QVERIFY(!policy.connectionStillWanted());
     }
 
     void slowFailureWaitsBeforeRetry()
     {
         ChromeConnectPolicy policy;
-        policy.observe(0, true, false);
-        QVERIFY(policy.observe(2000, true, false));
+        QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(17000, true, false, true));
         policy.connectionFinished(20000);
         QVERIFY(!policy.observe(20001, true, false));
@@ -40,38 +45,34 @@ private slots:
     {
         ChromeConnectPolicy policy;
         policy.satisfy();
-        QVERIFY(!policy.observe(0, true, false));
-        QVERIFY(policy.observe(2000, true, false));
+        QVERIFY(policy.observe(0, true, false));
     }
 
     void disconnectDuringLookupCancelsRequest()
     {
         ChromeConnectPolicy policy;
-        policy.observe(0, true, false);
-        QVERIFY(policy.observe(2000, true, false));
-        QVERIFY(policy.connectionStillWanted(2000));
+        QVERIFY(policy.observe(0, true, false));
+        QVERIFY(policy.connectionStillWanted());
         policy.satisfy();
-        QVERIFY(!policy.connectionStillWanted(2001));
+        QVERIFY(!policy.connectionStillWanted());
     }
 
-    void debounceAndBoundedRetries()
+    void boundedRetries()
     {
         ChromeConnectPolicy policy;
-        QVERIFY(!policy.observe(0, true, false));
-        QVERIFY(!policy.observe(1999, true, false));
-        QVERIFY(policy.observe(2000, true, false));
-        QVERIFY(!policy.observe(16999, true, false));
-        QVERIFY(policy.observe(17000, true, false));
+        QVERIFY(policy.observe(0, true, false));
+        QVERIFY(!policy.observe(14999, true, false));
+        QVERIFY(policy.observe(15000, true, false));
         QVERIFY(!policy.observe(120000, true, false));
     }
 
-    void shortPlaybackNeverConnects()
+    void pauseCancelsPendingLookup()
     {
         ChromeConnectPolicy policy;
-        QVERIFY(!policy.observe(0, true, false));
+        QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(1000, false, false));
+        QVERIFY(!policy.connectionStillWanted());
         QVERIFY(!policy.observe(2000, true, false));
-        QVERIFY(!policy.observe(3000, false, false));
     }
 
     void manualDisconnectAndBriefPauseDoNotReclaim()
@@ -83,27 +84,24 @@ private slots:
         QVERIFY(!policy.observe(5000, true, false));
         QVERIFY(!policy.observe(7000, true, false));
         QVERIFY(!policy.observe(8000, false, false));
-        QVERIFY(!policy.observe(18000, true, false));
-        QVERIFY(policy.observe(20000, true, false));
+        QVERIFY(policy.observe(18000, true, false));
     }
 
     void cooldownSurvivesNewEpisode()
     {
         ChromeConnectPolicy policy;
-        policy.observe(0, true, false);
-        QVERIFY(policy.observe(2000, true, false));
+        QVERIFY(policy.observe(0, true, false));
         policy.observe(3000, false, false);
         policy.observe(14000, true, false);
         QVERIFY(!policy.observe(16000, true, false));
-        QVERIFY(!policy.observe(61999, true, false));
-        QVERIFY(policy.observe(62000, true, false));
+        QVERIFY(!policy.observe(59999, true, false));
+        QVERIFY(policy.observe(60000, true, false));
     }
 
     void pendingRequestDoesNotConsumeRetry()
     {
         ChromeConnectPolicy policy;
-        policy.observe(0, true, false);
-        QVERIFY(policy.observe(2000, true, false));
+        QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(17000, true, false, true));
         QVERIFY(policy.observe(18000, true, false));
         policy.satisfy();

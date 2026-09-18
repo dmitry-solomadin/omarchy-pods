@@ -161,7 +161,7 @@ void ChromeMediaConnector::playbackObserved(std::optional<bool> playing, quint64
 
 bool ChromeMediaConnector::canConnect(quint64 generation) const
 {
-    return active() && generation == m_generation && !m_connected && m_policy.connectionStillWanted(m_clock.elapsed());
+    return active() && generation == m_generation && !m_connected && m_policy.connectionStillWanted();
 }
 
 void ChromeMediaConnector::requestConnection(quint64 generation)

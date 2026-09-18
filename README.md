@@ -185,7 +185,7 @@ which is where the panel finds `librepods-ctl`. The unit is bound to
 ## Connect when Chrome plays media
 
 The bundled daemon connects the last remembered AirPods when Chrome or Chromium
-reports sustained media playback through MPRIS. This is on by default; connect
+reports media playback through MPRIS. This is on by default; connect
 the AirPods manually once with the updated daemon running to establish the target.
 
 Disconnecting from Omarchy's Bluetooth menu pauses the connector until the next
@@ -201,7 +201,9 @@ librepods-ctl chrome-connect:on   # Enable it (does not clear a manual-disconnec
 librepods-ctl status              # chrome_connect_enabled and chrome_connect_paused
 ```
 
-Playback must stay active for two seconds. There are at most two attempts per
+Connection is requested on the first observed `Playing` status, normally within
+one second of pressing Play. Brief autoplay or previews can also trigger it.
+Bluetooth connection time is additional. There are at most two attempts per
 episode, with 15 seconds after a connection request finishes before retrying.
 Pauses under ten seconds stay in the same episode, and a new episode waits until
 60 seconds after the last attempt. An already-connected device is left alone.
