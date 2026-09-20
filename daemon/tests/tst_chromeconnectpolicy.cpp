@@ -1,10 +1,31 @@
 #include <QtTest>
 #include "media/chromeconnectpolicy.hpp"
+#include "media/playbackplayers.hpp"
 
 class ChromeConnectPolicyTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void supportedPlayers_data()
+    {
+        QTest::addColumn<QString>("service");
+        QTest::addColumn<bool>("supported");
+        QTest::newRow("chrome") << QStringLiteral("org.mpris.MediaPlayer2.google-chrome") << true;
+        QTest::newRow("chromium-instance") << QStringLiteral("org.mpris.MediaPlayer2.chromium.instance123") << true;
+        QTest::newRow("spotify") << QStringLiteral("org.mpris.MediaPlayer2.spotify") << true;
+        QTest::newRow("spotify-instance") << QStringLiteral("org.mpris.MediaPlayer2.spotify.instance123") << true;
+        QTest::newRow("unrelated-player") << QStringLiteral("org.mpris.MediaPlayer2.vlc") << false;
+        QTest::newRow("similar-name") << QStringLiteral("org.mpris.MediaPlayer2.spotifyd") << false;
+        QTest::newRow("not-mpris") << QStringLiteral("com.spotify.Client") << false;
+    }
+
+    void supportedPlayers()
+    {
+        QFETCH(QString, service);
+        QFETCH(bool, supported);
+        QCOMPARE(isAutoConnectPlayer(service), supported);
+    }
+
     void firstPlaybackRequestsImmediately()
     {
         ChromeConnectPolicy policy;

@@ -2119,9 +2119,9 @@ int main(int argc, char *argv[]) {
                 trayAppPtr->setConversationalAwareness(true);
             } else if (msg == "ca:off") {
                 trayAppPtr->setConversationalAwareness(false);
-            } else if (msg == "chrome-connect:on") {
+            } else if (msg == "media-connect:on" || msg == "chrome-connect:on") {
                 trayAppPtr->setChromeConnectEnabled(true);
-            } else if (msg == "chrome-connect:off") {
+            } else if (msg == "media-connect:off" || msg == "chrome-connect:off") {
                 trayAppPtr->setChromeConnectEnabled(false);
             } else if (msg == "disconnect") {
                 trayAppPtr->disconnectAirPods();

@@ -1,4 +1,5 @@
 #include "chromemediaconnector.h"
+#include "playbackplayers.hpp"
 #include "BluetoothMonitor.h"
 #include "logger.h"
 #include <QDBusPendingCallWatcher>
@@ -13,13 +14,6 @@ constexpr int connectTimeoutMs = 60000;
 const QString playerPath = QStringLiteral("/org/mpris/MediaPlayer2");
 const QString playerInterface = QStringLiteral("org.mpris.MediaPlayer2.Player");
 
-bool isChromePlayer(const QString &service)
-{
-    return service == "org.mpris.MediaPlayer2.chromium"
-        || service.startsWith("org.mpris.MediaPlayer2.chromium.")
-        || service == "org.mpris.MediaPlayer2.google-chrome"
-        || service.startsWith("org.mpris.MediaPlayer2.google-chrome.");
-}
 }
 
 ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
@@ -34,7 +28,7 @@ ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
     connect(&m_timer, &QTimer::timeout, this, &ChromeMediaConnector::poll);
     if (!QDBusConnection::systemBus().connect("org.bluez", QString(), "org.bluez.Device1",
                                              "Disconnected", this, SLOT(onDisconnected(QDBusMessage)))) {
-        LOG_ERROR("Chrome media connect: cannot subscribe to BlueZ disconnect reasons");
+        LOG_ERROR("Media connect: cannot subscribe to BlueZ disconnect reasons");
     }
     restartMonitoring();
 }
@@ -46,7 +40,7 @@ void ChromeMediaConnector::saveSettings()
     m_settings->setValue("chromeConnect/paused", m_paused);
     m_settings->sync();
     if (m_settings->status() != QSettings::NoError) {
-        LOG_ERROR("Chrome media connect: cannot save preferences to " << m_settings->fileName());
+        LOG_ERROR("Media connect: cannot save preferences to " << m_settings->fileName());
     }
 }
 
@@ -56,7 +50,7 @@ void ChromeMediaConnector::restartMonitoring()
     m_policy = ChromeConnectPolicy();
     if (active()) m_timer.start();
     else m_timer.stop();
-    LOG_INFO("Chrome media connect: " << (!m_enabled ? "disabled" : m_paused ? "paused after local disconnect"
+    LOG_INFO("Media connect: " << (!m_enabled ? "disabled" : m_paused ? "paused after local disconnect"
                                          : m_address.isEmpty() ? "waiting for first AirPods connection" : "monitoring"));
 }
 
@@ -113,13 +107,13 @@ void ChromeMediaConnector::poll()
         QDBusPendingReply<QStringList> reply = *finished;
         finished->deleteLater();
         if (reply.isError()) {
-            LOG_WARN("Chrome media connect: ListNames failed: " << reply.error().message());
+            LOG_WARN("Media connect: ListNames failed: " << reply.error().message());
             playbackObserved(std::nullopt, generation);
             return;
         }
         QStringList players;
         for (const auto &name : reply.value()) {
-            if (isChromePlayer(name)) players.append(name);
+            if (isAutoConnectPlayer(name)) players.append(name);
         }
         queryPlayers(players, generation);
     });
@@ -141,7 +135,7 @@ void ChromeMediaConnector::queryPlayers(QStringList services, quint64 generation
         QDBusPendingReply<QDBusVariant> reply = *finished;
         finished->deleteLater();
         if (reply.isError()) {
-            LOG_DEBUG("Chrome media connect: PlaybackStatus unavailable for " << service << ": " << reply.error().message());
+            LOG_DEBUG("Media connect: PlaybackStatus unavailable for " << service << ": " << reply.error().message());
         } else if (reply.value().variant().toString() == "Playing") {
             playbackObserved(true, generation);
             return;
@@ -175,7 +169,7 @@ void ChromeMediaConnector::requestConnection(quint64 generation)
         m_connectBusy = false;
         if (!canConnect(generation)) return;
         if (reply.isError()) {
-            LOG_WARN("Chrome media connect: BlueZ device lookup failed: " << reply.error().message());
+            LOG_WARN("Media connect: BlueZ device lookup failed: " << reply.error().message());
             return;
         }
         const auto objects = reply.value();
@@ -188,13 +182,13 @@ void ChromeMediaConnector::requestConnection(quint64 generation)
                 return;
             }
             if (!device.value("Paired").toBool() || !device.value("Trusted").toBool()) {
-                LOG_WARN("Chrome media connect: remembered AirPods must be paired and trusted");
+                LOG_WARN("Media connect: remembered AirPods must be paired and trusted");
                 m_policy.satisfy();
                 return;
             }
             auto request = QDBusMessage::createMethodCall("org.bluez", it.key().path(), "org.bluez.Device1", "Connect");
             m_connectBusy = true;
-            LOG_INFO("Chrome media connect: requesting AirPods connection for browser playback");
+            LOG_INFO("Media connect: requesting AirPods connection for media playback");
             auto *connection = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(request, connectTimeoutMs), this);
             connect(connection, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *done) {
                 QDBusPendingReply<> result = *done;
@@ -202,15 +196,15 @@ void ChromeMediaConnector::requestConnection(quint64 generation)
                 m_connectBusy = false;
                 if (generation == m_generation) m_policy.connectionFinished(m_clock.elapsed());
                 if (result.isError()) {
-                    LOG_WARN("Chrome media connect: BlueZ Connect failed: " << result.error().name() << ": " << result.error().message());
+                    LOG_WARN("Media connect: BlueZ Connect failed: " << result.error().name() << ": " << result.error().message());
                 } else if (generation == m_generation) {
                     m_policy.satisfy();
-                    LOG_INFO("Chrome media connect: BlueZ Connect succeeded");
+                    LOG_INFO("Media connect: BlueZ Connect succeeded");
                 }
             });
             return;
         }
-        LOG_WARN("Chrome media connect: remembered AirPods not found in BlueZ; connect them manually once");
+        LOG_WARN("Media connect: remembered AirPods not found in BlueZ; connect them manually once");
         m_policy.satisfy();
     });
 }

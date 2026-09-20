@@ -24,6 +24,7 @@ qt_add_executable(librepods
     media/chromemediaconnector.cpp
     media/chromemediaconnector.h
     media/chromeconnectpolicy.hpp
+    media/playbackplayers.hpp
     media/pulseaudiocontroller.cpp
     media/pulseaudiocontroller.h
     airpods_packets.h

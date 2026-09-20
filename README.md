@@ -182,24 +182,30 @@ systemctl --user restart librepods.service
 which is where the panel finds `librepods-ctl`. The unit is bound to
 `graphical-session.target`, so the daemon comes back after a reboot.
 
-## Connect when Chrome plays media
+## Connect when Chrome or Spotify plays media
 
-The bundled daemon connects the last remembered AirPods when Chrome or Chromium
+The bundled daemon connects the last remembered AirPods when Chrome, Chromium or Spotify
 reports media playback through MPRIS. This is on by default; connect
 the AirPods manually once with the updated daemon running to establish the target.
 
 Disconnecting from Omarchy's Bluetooth menu pauses the connector until the next
-successful PC connection. The pause survives daemon restarts and stops Chrome
+successful PC connection. The pause survives daemon restarts and stops playback
 polling. This uses BlueZ's `Device1.Disconnected` reason: all local-host disconnects
 count, including `bluetoothctl`; remote disconnects, timeouts and suspend do not.
 BlueZ does not identify which application initiated a disconnect or reconnection.
 The LibrePods daemon keeps running to provide battery and controls.
 
 ```bash
-librepods-ctl chrome-connect:off  # Disable the feature persistently
-librepods-ctl chrome-connect:on   # Enable it (does not clear a manual-disconnect pause)
+librepods-ctl media-connect:off   # Disable the feature persistently
+librepods-ctl media-connect:on    # Enable it (does not clear a manual-disconnect pause)
 librepods-ctl status              # chrome_connect_enabled and chrome_connect_paused
 ```
+
+The original `chrome-connect:on/off` commands remain aliases. Existing
+`chrome_connect_*` status fields and saved preferences apply to both apps.
+Chrome and Spotify share one playback episode and retry budget: any supported
+player reporting `Playing` keeps the episode active, so simultaneous playback
+does not cause competing connection requests.
 
 Connection is requested on the first observed `Playing` status, normally within
 one second of pressing Play. Brief autoplay or previews can also trigger it.
