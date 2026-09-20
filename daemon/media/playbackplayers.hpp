@@ -1,6 +1,15 @@
 #pragma once
 
 #include <QString>
+#include <optional>
+
+// MPRIS PlaybackStatus: "Playing", "Paused", or "Stopped".
+inline std::optional<bool> playerIsPlaying(const QString &status)
+{
+    if (status == "Playing") return true;
+    if (status == "Paused" || status == "Stopped") return false;
+    return std::nullopt;
+}
 
 inline bool isAutoConnectPlayer(const QString &service)
 {

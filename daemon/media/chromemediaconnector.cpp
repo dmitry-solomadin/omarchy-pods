@@ -4,6 +4,7 @@
 #include "logger.h"
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QDBusServiceWatcher>
 #include <QDBusVariant>
 
 namespace {
@@ -13,7 +14,6 @@ constexpr int queryTimeoutMs = 1500;
 constexpr int connectTimeoutMs = 60000;
 const QString playerPath = QStringLiteral("/org/mpris/MediaPlayer2");
 const QString playerInterface = QStringLiteral("org.mpris.MediaPlayer2.Player");
-
 }
 
 ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
@@ -30,6 +30,13 @@ ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
                                              "Disconnected", this, SLOT(onDisconnected(QDBusMessage)))) {
         LOG_ERROR("Media connect: cannot subscribe to BlueZ disconnect reasons");
     }
+    auto *bluez = new QDBusServiceWatcher("org.bluez", QDBusConnection::systemBus(),
+                                         QDBusServiceWatcher::WatchForOwnerChange, this);
+    connect(bluez, &QDBusServiceWatcher::serviceOwnerChanged, this, [this]() {
+        // BlueZ can disappear without lowering Device1.Connected first.
+        m_connected = false;
+        restartMonitoring();
+    });
     restartMonitoring();
 }
 
@@ -134,13 +141,17 @@ void ChromeMediaConnector::queryPlayers(QStringList services, quint64 generation
             [this, services, service, generation, unknown](QDBusPendingCallWatcher *finished) {
         QDBusPendingReply<QDBusVariant> reply = *finished;
         finished->deleteLater();
+        const auto playing = reply.isError() ? std::nullopt : playerIsPlaying(reply.value().variant().toString());
         if (reply.isError()) {
             LOG_DEBUG("Media connect: PlaybackStatus unavailable for " << service << ": " << reply.error().message());
-        } else if (reply.value().variant().toString() == "Playing") {
+        } else if (!playing.has_value()) {
+            LOG_WARN("Media connect: invalid PlaybackStatus from " << service << ": " << reply.value().variant());
+        }
+        if (playing.value_or(false)) {
             playbackObserved(true, generation);
             return;
         }
-        queryPlayers(services, generation, unknown || reply.isError());
+        queryPlayers(services, generation, unknown || !playing.has_value());
     });
 }
 

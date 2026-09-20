@@ -6,6 +6,19 @@ class ChromeConnectPolicyTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void malformedStatusDoesNotRearmEpisode()
+    {
+        ChromeConnectPolicy policy;
+        policy.observe(0, true, true);
+        policy.observe(1000, playerIsPlaying("Buffering"), false);
+        policy.observe(12000, playerIsPlaying(""), false);
+        QVERIFY(!policy.observe(13000, true, false));
+        QVERIFY(!policy.connectionStillWanted());
+        QCOMPARE(playerIsPlaying("Playing"), std::optional<bool>(true));
+        QCOMPARE(playerIsPlaying("Paused"), std::optional<bool>(false));
+        QCOMPARE(playerIsPlaying("Stopped"), std::optional<bool>(false));
+    }
+
     void supportedPlayers_data()
     {
         QTest::addColumn<QString>("service");
