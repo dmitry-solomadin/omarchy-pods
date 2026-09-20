@@ -32,7 +32,7 @@
 #include "airpods_packets.h"
 #include "logger.h"
 #include "media/mediacontroller.h"
-#include "media/chromemediaconnector.h"
+#include "media/mediaconnector.h"
 #include "trayiconmanager.h"
 #include "notifier.hpp"
 #include "enums.h"
@@ -113,7 +113,7 @@ public:
         mediaController->followMediaChanges();
 
         monitor = new BluetoothMonitor(this);
-        m_chromeConnector = new ChromeMediaConnector(m_settings, this);
+        m_mediaConnector = new MediaConnector(m_settings, this);
         connect(monitor, &BluetoothMonitor::deviceConnected, this, &AirPodsTrayApp::bluezDeviceConnected);
         connect(monitor, &BluetoothMonitor::deviceDisconnected, this, &AirPodsTrayApp::bluezDeviceDisconnected);
         connect(monitor, &BluetoothMonitor::deviceConnectionProbeFinished,
@@ -795,7 +795,7 @@ private slots:
 
     void bluezDeviceConnected(const QString &address, const QString &name)
     {
-        m_chromeConnector->deviceConnected(address);
+        m_mediaConnector->deviceConnected(address);
         rememberAirPodsDevice(address, name);
         m_disconnectFinalized = false;
 
@@ -1035,7 +1035,7 @@ private slots:
 
     void bluezDeviceDisconnected(const QString &address, const QString &name)
     {
-        m_chromeConnector->deviceDisconnected(address);
+        m_mediaConnector->deviceDisconnected(address);
         if (address == m_deviceInfo->bluetoothAddress())
         {
             onDeviceDisconnected(QBluetoothAddress(address));
@@ -1644,7 +1644,7 @@ private:
     // Last answer BlueZ gave about this device, which is what separates a dead link from absent pods.
     bool m_bluezReportedConnected = false;
     QSettings *m_settings;
-    ChromeMediaConnector *m_chromeConnector = nullptr;
+    MediaConnector *m_mediaConnector = nullptr;
     AutoStartManager *m_autoStartManager;
     int m_retryAttempts = 3;
     int m_retryCount = 0;
@@ -1700,9 +1700,9 @@ public:
     int reopenCallsTotal() const { return m_reopenCallsTotal; }
     void incReopenCallsTotal() { ++m_reopenCallsTotal; }
 
-    void setChromeConnectEnabled(bool enabled)
+    void setMediaConnectEnabled(bool enabled)
     {
-        m_chromeConnector->setEnabled(enabled);
+        m_mediaConnector->setEnabled(enabled);
         writeStateFile();
     }
 
@@ -1714,8 +1714,8 @@ public:
         Battery *b = d ? d->getBattery() : nullptr;
         QJsonObject status;
         status.insert("schema_version", 1);
-        status.insert("chrome_connect_enabled", m_chromeConnector->enabled());
-        status.insert("chrome_connect_paused", m_chromeConnector->paused());
+        status.insert("chrome_connect_enabled", m_mediaConnector->enabled());
+        status.insert("chrome_connect_paused", m_mediaConnector->paused());
         status.insert("connected", areAirpodsConnected());
         status.insert("device_name", d ? d->deviceName() : QString());
         status.insert("noise_mode", d ? d->noiseControlModeInt() : -1);
@@ -2120,9 +2120,9 @@ int main(int argc, char *argv[]) {
             } else if (msg == "ca:off") {
                 trayAppPtr->setConversationalAwareness(false);
             } else if (msg == "media-connect:on" || msg == "chrome-connect:on") {
-                trayAppPtr->setChromeConnectEnabled(true);
+                trayAppPtr->setMediaConnectEnabled(true);
             } else if (msg == "media-connect:off" || msg == "chrome-connect:off") {
-                trayAppPtr->setChromeConnectEnabled(false);
+                trayAppPtr->setMediaConnectEnabled(false);
             } else if (msg == "disconnect") {
                 trayAppPtr->disconnectAirPods();
             } else if (msg == "connect") {

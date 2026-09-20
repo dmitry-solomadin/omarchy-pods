@@ -1,6 +1,6 @@
 #pragma once
 
-#include "chromeconnectpolicy.hpp"
+#include "mediaconnectpolicy.hpp"
 #include <QElapsedTimer>
 #include <QDBusMessage>
 #include <QObject>
@@ -8,11 +8,11 @@
 #include <QStringList>
 #include <QTimer>
 
-class ChromeMediaConnector : public QObject
+class MediaConnector : public QObject
 {
     Q_OBJECT
 public:
-    explicit ChromeMediaConnector(QSettings *settings, QObject *parent = nullptr);
+    explicit MediaConnector(QSettings *settings, QObject *parent = nullptr);
     bool enabled() const { return m_enabled; }
     bool paused() const { return m_paused; }
     void setEnabled(bool enabled);
@@ -35,7 +35,7 @@ private:
     QSettings *m_settings;
     QTimer m_timer;
     QElapsedTimer m_clock;
-    ChromeConnectPolicy m_policy;
+    MediaConnectPolicy m_policy;
     QString m_address;
     quint64 m_generation = 0;
     bool m_enabled = false;

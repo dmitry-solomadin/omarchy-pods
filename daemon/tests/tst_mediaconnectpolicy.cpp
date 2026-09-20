@@ -1,14 +1,14 @@
 #include <QtTest>
-#include "media/chromeconnectpolicy.hpp"
+#include "media/mediaconnectpolicy.hpp"
 #include "media/playbackplayers.hpp"
 
-class ChromeConnectPolicyTest : public QObject
+class MediaConnectPolicyTest : public QObject
 {
     Q_OBJECT
 private slots:
     void malformedStatusDoesNotRearmEpisode()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         policy.observe(0, true, true);
         policy.observe(1000, playerIsPlaying("Buffering"), false);
         policy.observe(12000, playerIsPlaying(""), false);
@@ -41,14 +41,14 @@ private slots:
 
     void firstPlaybackRequestsImmediately()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(!policy.observe(0, false, false));
         QVERIFY(policy.observe(1000, true, false));
     }
 
     void unknownPlaybackDoesNotRearmEpisode()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         policy.observe(0, true, true);
         policy.observe(1000, std::nullopt, false);
         policy.observe(12000, std::nullopt, false);
@@ -58,7 +58,7 @@ private slots:
 
     void unknownPlaybackCancelsPendingLookup()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         policy.observe(1, std::nullopt, false);
         QVERIFY(!policy.connectionStillWanted());
@@ -66,7 +66,7 @@ private slots:
 
     void slowFailureWaitsBeforeRetry()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(17000, true, false, true));
         policy.connectionFinished(20000);
@@ -77,14 +77,14 @@ private slots:
 
     void idleConnectionEventsDoNotSuppressNextPlayback()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         policy.satisfy();
         QVERIFY(policy.observe(0, true, false));
     }
 
     void disconnectDuringLookupCancelsRequest()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         QVERIFY(policy.connectionStillWanted());
         policy.satisfy();
@@ -93,7 +93,7 @@ private slots:
 
     void boundedRetries()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(14999, true, false));
         QVERIFY(policy.observe(15000, true, false));
@@ -102,7 +102,7 @@ private slots:
 
     void pauseCancelsPendingLookup()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(1000, false, false));
         QVERIFY(!policy.connectionStillWanted());
@@ -111,7 +111,7 @@ private slots:
 
     void manualDisconnectAndBriefPauseDoNotReclaim()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(!policy.observe(0, true, true));
         QVERIFY(!policy.observe(2000, true, false));
         QVERIFY(!policy.observe(3000, false, false));
@@ -123,7 +123,7 @@ private slots:
 
     void cooldownSurvivesNewEpisode()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         policy.observe(3000, false, false);
         policy.observe(14000, true, false);
@@ -134,7 +134,7 @@ private slots:
 
     void pendingRequestDoesNotConsumeRetry()
     {
-        ChromeConnectPolicy policy;
+        MediaConnectPolicy policy;
         QVERIFY(policy.observe(0, true, false));
         QVERIFY(!policy.observe(17000, true, false, true));
         QVERIFY(policy.observe(18000, true, false));
@@ -143,5 +143,5 @@ private slots:
     }
 };
 
-QTEST_GUILESS_MAIN(ChromeConnectPolicyTest)
-#include "tst_chromeconnectpolicy.moc"
+QTEST_GUILESS_MAIN(MediaConnectPolicyTest)
+#include "tst_mediaconnectpolicy.moc"

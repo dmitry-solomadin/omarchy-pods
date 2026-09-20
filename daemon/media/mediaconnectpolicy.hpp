@@ -3,7 +3,7 @@
 #include <QtGlobal>
 #include <optional>
 
-class ChromeConnectPolicy
+class MediaConnectPolicy
 {
 public:
     static constexpr qint64 pauseGraceMs = 10000;

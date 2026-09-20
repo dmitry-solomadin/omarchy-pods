@@ -1,4 +1,4 @@
-#include "chromemediaconnector.h"
+#include "mediaconnector.h"
 #include "playbackplayers.hpp"
 #include "BluetoothMonitor.h"
 #include "logger.h"
@@ -16,7 +16,7 @@ const QString playerPath = QStringLiteral("/org/mpris/MediaPlayer2");
 const QString playerInterface = QStringLiteral("org.mpris.MediaPlayer2.Player");
 }
 
-ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
+MediaConnector::MediaConnector(QSettings *settings, QObject *parent)
     : QObject(parent), m_settings(settings)
 {
     qDBusRegisterMetaType<ManagedObjectList>();
@@ -25,7 +25,7 @@ ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
     m_paused = settings->value("chromeConnect/paused", false).toBool();
     m_clock.start();
     m_timer.setInterval(pollIntervalMs);
-    connect(&m_timer, &QTimer::timeout, this, &ChromeMediaConnector::poll);
+    connect(&m_timer, &QTimer::timeout, this, &MediaConnector::poll);
     if (!QDBusConnection::systemBus().connect("org.bluez", QString(), "org.bluez.Device1",
                                              "Disconnected", this, SLOT(onDisconnected(QDBusMessage)))) {
         LOG_ERROR("Media connect: cannot subscribe to BlueZ disconnect reasons");
@@ -40,7 +40,7 @@ ChromeMediaConnector::ChromeMediaConnector(QSettings *settings, QObject *parent)
     restartMonitoring();
 }
 
-void ChromeMediaConnector::saveSettings()
+void MediaConnector::saveSettings()
 {
     m_settings->setValue("chromeConnect/enabled", m_enabled);
     m_settings->setValue("chromeConnect/address", m_address);
@@ -51,17 +51,17 @@ void ChromeMediaConnector::saveSettings()
     }
 }
 
-void ChromeMediaConnector::restartMonitoring()
+void MediaConnector::restartMonitoring()
 {
     ++m_generation;
-    m_policy = ChromeConnectPolicy();
+    m_policy = MediaConnectPolicy();
     if (active()) m_timer.start();
     else m_timer.stop();
     LOG_INFO("Media connect: " << (!m_enabled ? "disabled" : m_paused ? "paused after local disconnect"
                                          : m_address.isEmpty() ? "waiting for first AirPods connection" : "monitoring"));
 }
 
-void ChromeMediaConnector::setEnabled(bool enabled)
+void MediaConnector::setEnabled(bool enabled)
 {
     if (m_enabled == enabled) return;
     m_enabled = enabled;
@@ -69,7 +69,7 @@ void ChromeMediaConnector::setEnabled(bool enabled)
     restartMonitoring();
 }
 
-void ChromeMediaConnector::deviceConnected(const QString &address)
+void MediaConnector::deviceConnected(const QString &address)
 {
     m_connected = true;
     if (m_address != address || m_paused) {
@@ -81,7 +81,7 @@ void ChromeMediaConnector::deviceConnected(const QString &address)
     m_policy.satisfy();
 }
 
-void ChromeMediaConnector::onDisconnected(const QDBusMessage &message)
+void MediaConnector::onDisconnected(const QDBusMessage &message)
 {
     const QString suffix = "/dev_" + QString(m_address).replace(':', '_');
     if (m_address.isEmpty() || !message.path().endsWith(suffix)) return;
@@ -94,7 +94,7 @@ void ChromeMediaConnector::onDisconnected(const QDBusMessage &message)
     restartMonitoring();
 }
 
-void ChromeMediaConnector::deviceDisconnected(const QString &address)
+void MediaConnector::deviceDisconnected(const QString &address)
 {
     if (address != m_address) return;
     m_connected = false;
@@ -102,7 +102,7 @@ void ChromeMediaConnector::deviceDisconnected(const QString &address)
     m_policy.satisfy();
 }
 
-void ChromeMediaConnector::poll()
+void MediaConnector::poll()
 {
     if (m_pollBusy || !active()) return;
     m_pollBusy = true;
@@ -126,7 +126,7 @@ void ChromeMediaConnector::poll()
     });
 }
 
-void ChromeMediaConnector::queryPlayers(QStringList services, quint64 generation, bool unknown)
+void MediaConnector::queryPlayers(QStringList services, quint64 generation, bool unknown)
 {
     if (!active() || generation != m_generation || services.isEmpty()) {
         playbackObserved(unknown ? std::nullopt : std::optional<bool>(false), generation);
@@ -155,7 +155,7 @@ void ChromeMediaConnector::queryPlayers(QStringList services, quint64 generation
     });
 }
 
-void ChromeMediaConnector::playbackObserved(std::optional<bool> playing, quint64 generation)
+void MediaConnector::playbackObserved(std::optional<bool> playing, quint64 generation)
 {
     m_pollBusy = false;
     if (!active() || generation != m_generation) return;
@@ -164,12 +164,12 @@ void ChromeMediaConnector::playbackObserved(std::optional<bool> playing, quint64
     }
 }
 
-bool ChromeMediaConnector::canConnect(quint64 generation) const
+bool MediaConnector::canConnect(quint64 generation) const
 {
     return active() && generation == m_generation && !m_connected && m_policy.connectionStillWanted();
 }
 
-void ChromeMediaConnector::requestConnection(quint64 generation)
+void MediaConnector::requestConnection(quint64 generation)
 {
     m_connectBusy = true;
     auto message = QDBusMessage::createMethodCall("org.bluez", "/", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
