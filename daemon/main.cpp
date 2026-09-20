@@ -1714,8 +1714,8 @@ public:
         Battery *b = d ? d->getBattery() : nullptr;
         QJsonObject status;
         status.insert("schema_version", 1);
-        status.insert("chrome_connect_enabled", m_mediaConnector->enabled());
-        status.insert("chrome_connect_paused", m_mediaConnector->paused());
+        status.insert("media_connect_enabled", m_mediaConnector->enabled());
+        status.insert("media_connect_paused", m_mediaConnector->paused());
         status.insert("connected", areAirpodsConnected());
         status.insert("device_name", d ? d->deviceName() : QString());
         status.insert("noise_mode", d ? d->noiseControlModeInt() : -1);
@@ -2119,9 +2119,9 @@ int main(int argc, char *argv[]) {
                 trayAppPtr->setConversationalAwareness(true);
             } else if (msg == "ca:off") {
                 trayAppPtr->setConversationalAwareness(false);
-            } else if (msg == "media-connect:on" || msg == "chrome-connect:on") {
+            } else if (msg == "media-connect:on") {
                 trayAppPtr->setMediaConnectEnabled(true);
-            } else if (msg == "media-connect:off" || msg == "chrome-connect:off") {
+            } else if (msg == "media-connect:off") {
                 trayAppPtr->setMediaConnectEnabled(false);
             } else if (msg == "disconnect") {
                 trayAppPtr->disconnectAirPods();

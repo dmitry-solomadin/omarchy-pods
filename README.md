@@ -198,11 +198,10 @@ The LibrePods daemon keeps running to provide battery and controls.
 ```bash
 librepods-ctl media-connect:off   # Disable the feature persistently
 librepods-ctl media-connect:on    # Enable it (does not clear a manual-disconnect pause)
-librepods-ctl status              # chrome_connect_enabled and chrome_connect_paused
+librepods-ctl status             # media_connect_enabled and media_connect_paused
 ```
 
-The original `chrome-connect:on/off` commands remain aliases. Existing
-`chrome_connect_*` status fields and saved preferences apply to both apps.
+This is one global switch for all supported apps.
 Chrome and Spotify share one playback episode and retry budget: any supported
 player reporting `Playing` keeps the episode active, so simultaneous playback
 does not cause competing connection requests.

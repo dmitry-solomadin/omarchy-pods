@@ -20,9 +20,9 @@ MediaConnector::MediaConnector(QSettings *settings, QObject *parent)
     : QObject(parent), m_settings(settings)
 {
     qDBusRegisterMetaType<ManagedObjectList>();
-    m_address = settings->value("chromeConnect/address").toString();
-    m_enabled = settings->value("chromeConnect/enabled", true).toBool();
-    m_paused = settings->value("chromeConnect/paused", false).toBool();
+    m_address = settings->value("mediaConnect/address").toString();
+    m_enabled = settings->value("mediaConnect/enabled", true).toBool();
+    m_paused = settings->value("mediaConnect/paused", false).toBool();
     m_clock.start();
     m_timer.setInterval(pollIntervalMs);
     connect(&m_timer, &QTimer::timeout, this, &MediaConnector::poll);
@@ -42,9 +42,9 @@ MediaConnector::MediaConnector(QSettings *settings, QObject *parent)
 
 void MediaConnector::saveSettings()
 {
-    m_settings->setValue("chromeConnect/enabled", m_enabled);
-    m_settings->setValue("chromeConnect/address", m_address);
-    m_settings->setValue("chromeConnect/paused", m_paused);
+    m_settings->setValue("mediaConnect/enabled", m_enabled);
+    m_settings->setValue("mediaConnect/address", m_address);
+    m_settings->setValue("mediaConnect/paused", m_paused);
     m_settings->sync();
     if (m_settings->status() != QSettings::NoError) {
         LOG_ERROR("Media connect: cannot save preferences to " << m_settings->fileName());
