@@ -184,41 +184,9 @@ which is where the panel finds `librepods-ctl`. The unit is bound to
 
 ## Connect when Chrome or Spotify plays media
 
-The bundled daemon connects the last remembered AirPods when Chrome, Chromium or Spotify
-reports media playback through MPRIS. This is on by default; connect
-the AirPods manually once with the updated daemon running to establish the target.
+AirPods can connect automatically when you play media in Chrome, Chromium or Spotify. This is enabled by default and runs inside the existing daemon. Connect your AirPods manually once so it remembers them; it then makes up to two connection attempts per playback session, with a delay between retries. Already-connected AirPods are left alone.
 
-Disconnecting from Omarchy's Bluetooth menu pauses the connector until the next
-successful PC connection. The pause survives daemon restarts and stops playback
-polling. This uses BlueZ's `Device1.Disconnected` reason: all local-host disconnects
-count, including `bluetoothctl`; remote disconnects, timeouts and suspend do not.
-BlueZ does not identify which application initiated a disconnect or reconnection.
-The LibrePods daemon keeps running to provide battery and controls.
-
-```bash
-librepods-ctl media-connect:off   # Disable the feature persistently
-librepods-ctl media-connect:on    # Enable it (does not clear a manual-disconnect pause)
-librepods-ctl status             # media_connect_enabled and media_connect_paused
-```
-
-This is one global switch for all supported apps.
-Chrome and Spotify share one playback episode and retry budget: any supported
-player reporting `Playing` keeps the episode active, so simultaneous playback
-does not cause competing connection requests.
-
-Connection is requested on the first observed `Playing` status, normally within
-one second of pressing Play. Brief autoplay or previews can also trigger it.
-Bluetooth connection time is additional. There are at most two attempts per
-episode, with 15 seconds after a connection request finishes before retrying.
-Pauses under ten seconds stay in the same episode, and a new episode waits until
-60 seconds after the last attempt. An already-connected device is left alone.
-Switching away during an episode does not trigger another takeover in that episode.
-
-The connector uses the existing service and audio-profile path. Chrome media
-integration must be enabled; muted videos may still report playback. Taking over
-from another device and routing audio depend on the AirPods and desktop audio
-policy. This is a normal Bluetooth connection request, not Apple's switching
-protocol. Manual-disconnect detection requires BlueZ's `Disconnected` signal.
+Disconnecting through Omarchy's Bluetooth menu pauses automatic connections until you reconnect the AirPods to the PC, even across daemon restarts. Use `librepods-ctl media-connect:off` or `librepods-ctl media-connect:on` to disable or enable the feature for all supported apps; enabling it does not override a manual-disconnect pause. Run `librepods-ctl status` to check `media_connect_enabled` and `media_connect_paused`.
 
 ## Remove
 
